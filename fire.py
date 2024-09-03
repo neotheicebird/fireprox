@@ -27,6 +27,7 @@ class FireProx(object):
         self.api_list = []
         self.client = None
         self.help = help_text
+        print(self.api_id)
 
         if self.access_key and self.secret_access_key:
             if not self.region:
@@ -258,6 +259,7 @@ class FireProx(object):
             resource_id,
             proxy_url
         )
+        return response['id'], url, proxy_url
 
     def update_api(self, api_id, url):
         if not any([api_id, url]):
@@ -395,6 +397,7 @@ def main():
         result = fp.list_api()
 
     elif args.command == 'create':
+        print(f'Creating API: {fp.url}...')
         result = fp.create_api(fp.url)
 
     elif args.command == 'delete':
