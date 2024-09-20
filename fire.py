@@ -12,6 +12,9 @@ import argparse
 import json
 import configparser
 from typing import Tuple, Callable
+from botocore.exceptions import ClientError
+import random
+import time
 
 
 class FireProx(object):
@@ -287,17 +290,32 @@ class FireProx(object):
         else:
             self.error(f'Unable to update, no valid resource for {api_id}')
 
-    def delete_api(self, api_id):
-        if not api_id:
+    def delete_api(self, rest_api_id, max_retries=5):
+        retries = 0
+        backoff_base = 10  # Initial wait time in seconds
+        if not rest_api_id:
             self.error('Please provide a valid API ID')
-        items = self.list_api(api_id)
-        for item in items:
-            item_api_id = item['id']
-            if item_api_id == api_id:
-                response = self.client.delete_rest_api(
-                    restApiId=api_id
-                )
-                return True
+        items = self.list_api(rest_api_id)
+        for trial in range(max_retries):
+            try:
+                for item in items:
+                    item_api_id = item['id']
+                    if item_api_id == rest_api_id:
+                        response = self.client.delete_rest_api(
+                            restApiId=rest_api_id
+                        )
+                        return True
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'TooManyRequestsException':
+                    retries += 1
+                    wait_time = backoff_base * (2 ** retries) + random.uniform(0, 1)
+                    print(f"TooManyRequestsException: Retrying in {wait_time:.2f} seconds...")
+                    time.sleep(wait_time)  # Exponential backoff with jitter
+                else:
+                    # For other exceptions, raise the error
+                    raise
+        
+        print(f"Max retries exceeded. Could not delete API - {rest_api_id}")
         return False
 
     def list_api(self, deleted_api_id=None):
