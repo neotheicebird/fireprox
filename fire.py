@@ -313,6 +313,7 @@ class FireProx(object):
                     retries += 1
                 else:
                     # For other exceptions, raise the error
+                    print("delete_api: Error:", e.response['Error']['Message'])
                     raise
         
         print(f"Max retries exceeded. Could not delete API - {rest_api_id}")
