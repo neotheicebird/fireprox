@@ -292,7 +292,7 @@ class FireProx(object):
 
     def delete_api(self, rest_api_id, max_retries=5):
         retries = 0
-        backoff_base = 10  # Initial wait time in seconds
+        backoff_base = 15  # Initial wait time in seconds
         if not rest_api_id:
             self.error('Please provide a valid API ID')
         items = self.list_api(rest_api_id)
@@ -307,10 +307,10 @@ class FireProx(object):
                         return True
             except ClientError as e:
                 if e.response['Error']['Code'] == 'TooManyRequestsException':
-                    retries += 1
                     wait_time = backoff_base * (2 ** retries) + random.uniform(0, 1)
                     print(f"TooManyRequestsException: Retrying in {wait_time:.2f} seconds...")
                     time.sleep(wait_time)  # Exponential backoff with jitter
+                    retries += 1
                 else:
                     # For other exceptions, raise the error
                     raise
